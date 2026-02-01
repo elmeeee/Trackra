@@ -3,6 +3,7 @@
 //  Trackra
 //
 //  Created by Elmee on 01/02/2026.
+//  Copyright © 2026 KaMy. All rights reserved.
 //
 
 import SwiftUI
@@ -27,15 +28,6 @@ struct TrackraApp: App {
                             NSApplication.AboutPanelOptionKey(rawValue: "Copyright"): "© 2026 KaMy"
                         ]
                     )
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        for window in NSApplication.shared.windows {
-                            if window.title == "About Trackra" {
-                                window.close()
-                            }
-                        }
-                        openAboutWindow()
-                    }
                 }
             }
             
@@ -46,26 +38,6 @@ struct TrackraApp: App {
                 .keyboardShortcut("n", modifiers: .command)
             }
         }
-        
-        Window("About Trackra", id: "about") {
-            AboutView()
-        }
-        .windowResizability(.contentSize)
-        .defaultPosition(.center)
-    }
-    
-    private func openAboutWindow() {
-        let aboutWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 600, height: 700),
-            styleMask: [.titled, .closable],
-            backing: .buffered,
-            defer: false
-        )
-        aboutWindow.title = "About Trackra"
-        aboutWindow.contentView = NSHostingView(rootView: AboutView())
-        aboutWindow.center()
-        aboutWindow.makeKeyAndOrderFront(nil)
-        aboutWindow.isReleasedWhenClosed = false
     }
 }
 
