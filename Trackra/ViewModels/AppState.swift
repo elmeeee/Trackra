@@ -42,14 +42,16 @@ final class AppState: ObservableObject {
         }
     }
 
-    func loadApplications() async {
+    func loadApplications(withLoadingState: Bool = true) async {
         guard let apiKey = authManager.getApiKey(), !apiKey.isEmpty else {
             // Don't show error if not authenticated, just return
             isLoading = false
             return
         }
 
-        isLoading = true
+        if withLoadingState {
+            isLoading = true
+        }
         error = nil
 
         do {
@@ -60,7 +62,9 @@ final class AppState: ObservableObject {
             error = .networkError(networkError)
         }
 
-        isLoading = false
+        if withLoadingState {
+            isLoading = false
+        }
     }
 
     func createApplication(
@@ -86,7 +90,7 @@ final class AppState: ObservableObject {
                 location: location,
                 url: url
             )
-            await loadApplications()
+            await loadApplications(withLoadingState: false)
             successMessage = "Application added successfully!"
         } catch let apiError as APIError {
             error = apiError
@@ -116,7 +120,7 @@ final class AppState: ObservableObject {
                 occurredAt: occurredAt,
                 note: note
             )
-            await loadApplications()
+            await loadApplications(withLoadingState: false)
             successMessage = getSuccessMessage(for: type)
         } catch let apiError as APIError {
             error = apiError
@@ -146,7 +150,7 @@ final class AppState: ObservableObject {
         do {
             try await apiClient.updateStatus(
                 apiKey: apiKey, applicationId: applicationId, status: newStatus)
-            await loadApplications()
+            await loadApplications(withLoadingState: false)
             successMessage = "Status updated to \(newStatus.displayName)"
         } catch let apiError as APIError {
             applications[index] = oldApplication
