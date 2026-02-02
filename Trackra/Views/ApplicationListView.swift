@@ -10,6 +10,17 @@ import SwiftUI
 
 struct ApplicationListView: View {
     @ObservedObject var appState: AppState
+    @State private var searchText = ""
+    
+    var filteredApplications: [Application] {
+        if searchText.count < 3 {
+            return appState.sortedApplications
+        }
+        return appState.sortedApplications.filter { application in
+            application.role.localizedCaseInsensitiveContains(searchText) ||
+            application.company.localizedCaseInsensitiveContains(searchText)
+        }
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -42,6 +53,32 @@ struct ApplicationListView: View {
             
             Divider()
             
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(.secondary)
+                    .font(.system(size: 14))
+                
+                TextField("Search by role or company...", text: $searchText)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 14))
+                
+                if !searchText.isEmpty {
+                    Button(action: {
+                        searchText = ""
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
+                            .font(.system(size: 14))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color(NSColor.controlBackgroundColor))
+            
+            Divider()
+            
             if appState.isLoading && appState.applications.isEmpty {
                 SkeletonLoadingView()
             } else if let error = appState.error, appState.applications.isEmpty {
@@ -63,7 +100,7 @@ struct ApplicationListView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 8) {
-                        ForEach(appState.sortedApplications) { application in
+                        ForEach(filteredApplications) { application in
                             ApplicationRow(
                                 application: application,
                                 isSelected: appState.selectedApplicationId == application.id

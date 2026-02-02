@@ -121,6 +121,64 @@ final class AppState: ObservableObject {
         isLoading = false
     }
     
+    func updateStatus(applicationId: String, newStatus: ApplicationStatus) async {
+        guard let apiKey = authManager.getApiKey(), !apiKey.isEmpty else {
+            error = .serverError("Not authenticated")
+            return
+        }
+        
+        guard let index = applications.firstIndex(where: { $0.id == applicationId }) else {
+            return
+        }
+        
+        let oldApplication = applications[index]
+        
+        var updatedApplication = oldApplication
+        updatedApplication.status = newStatus
+        applications[index] = updatedApplication
+        
+        do {
+            try await apiClient.updateStatus(apiKey: apiKey, applicationId: applicationId, status: newStatus)
+            await loadApplications()
+            successMessage = "Status updated to \(newStatus.displayName)"
+        } catch let apiError as APIError {
+            applications[index] = oldApplication
+            error = apiError
+        } catch let networkError {
+            applications[index] = oldApplication
+            error = .networkError(networkError)
+        }
+    }
+    
+    func deleteApplication(applicationId: String) async {
+        guard let apiKey = authManager.getApiKey(), !apiKey.isEmpty else {
+            error = .serverError("Not authenticated")
+            return
+        }
+        
+        guard let index = applications.firstIndex(where: { $0.id == applicationId }) else {
+            return
+        }
+        
+        let deletedApplication = applications[index]
+        applications.remove(at: index)
+        
+        if selectedApplicationId == applicationId {
+            selectedApplicationId = nil
+        }
+        
+        do {
+            try await apiClient.deleteApplication(apiKey: apiKey, applicationId: applicationId)
+            successMessage = "Application deleted successfully"
+        } catch let apiError as APIError {
+            applications.insert(deletedApplication, at: index)
+            error = apiError
+        } catch let networkError {
+            applications.insert(deletedApplication, at: index)
+            error = .networkError(networkError)
+        }
+    }
+    
     func refresh() async {
         await loadApplications()
     }

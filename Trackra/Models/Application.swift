@@ -18,7 +18,7 @@ struct Application: Codable, Identifiable, Equatable {
     let location: String
     let url: String
     let createdAt: Date
-    let status: ApplicationStatus
+    var status: ApplicationStatus
     let daysSinceLastActivity: Int
     let activities: [Activity]
     

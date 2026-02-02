@@ -13,6 +13,8 @@ protocol APIClientProtocol {
     func login(email: String, password: String) async throws -> String
     func fetchApplications(apiKey: String) async throws -> [Application]
     func createApplication(apiKey: String, role: String, company: String, appliedAt: Date, source: String, salaryRange: String, location: String, url: String) async throws -> String
+    func updateStatus(apiKey: String, applicationId: String, status: ApplicationStatus) async throws
+    func deleteApplication(apiKey: String, applicationId: String) async throws
     func createActivity(apiKey: String, applicationId: String, type: ActivityType, occurredAt: Date, note: String) async throws -> String
     func fetchNotifications(apiKey: String) async throws -> [AppNotification]
 }
@@ -210,6 +212,79 @@ final class APIClient: APIClientProtocol {
             throw error
         } catch let error as DecodingError {
             throw APIError.decodingError(error)
+        } catch {
+            throw APIError.networkError(error)
+        }
+    }
+    
+    func updateStatus(apiKey: String, applicationId: String, status: ApplicationStatus) async throws {
+        guard var urlComponents = URLComponents(string: baseURL) else {
+            throw APIError.invalidURL
+        }
+        urlComponents.queryItems = [
+            URLQueryItem(name: "path", value: "applications/update-status"),
+            URLQueryItem(name: "apiKey", value: apiKey)
+        ]
+        
+        guard let requestURL = urlComponents.url else {
+            throw APIError.invalidURL
+        }
+        
+        var request = URLRequest(url: requestURL)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let requestBody = UpdateStatusRequest(
+            applicationId: applicationId,
+            status: status.rawValue
+        )
+        
+        request.httpBody = try encoder.encode(requestBody)
+        
+        do {
+            let (_, response) = try await session.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode) else {
+                throw APIError.invalidResponse
+            }
+        } catch let error as APIError {
+            throw error
+        } catch {
+            throw APIError.networkError(error)
+        }
+    }
+    
+    func deleteApplication(apiKey: String, applicationId: String) async throws {
+        guard var urlComponents = URLComponents(string: baseURL) else {
+            throw APIError.invalidURL
+        }
+        urlComponents.queryItems = [
+            URLQueryItem(name: "path", value: "applications/delete"),
+            URLQueryItem(name: "apiKey", value: apiKey)
+        ]
+        
+        guard let requestURL = urlComponents.url else {
+            throw APIError.invalidURL
+        }
+        
+        var request = URLRequest(url: requestURL)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let requestBody = DeleteApplicationRequest(applicationId: applicationId)
+        
+        request.httpBody = try encoder.encode(requestBody)
+        
+        do {
+            let (_, response) = try await session.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode) else {
+                throw APIError.invalidResponse
+            }
+        } catch let error as APIError {
+            throw error
         } catch {
             throw APIError.networkError(error)
         }

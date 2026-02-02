@@ -13,6 +13,7 @@ struct ApplicationDetailView: View {
     let application: Application
     @State private var isProcessingQuickAction = false
     @State private var showingLogoutConfirmation = false
+    @State private var showingDeleteConfirmation = false
     
     var body: some View {
         ScrollView {
@@ -23,6 +24,11 @@ struct ApplicationDetailView: View {
                     .padding(.vertical, 20)
                 
                 metadataSection
+                
+                Divider()
+                    .padding(.vertical, 20)
+                
+                statusAndActionsSection
                 
                 if application.status == .noResponse {
                     followUpBanner
@@ -57,6 +63,18 @@ struct ApplicationDetailView: View {
             }
         } message: {
             Text("Are you sure you want to sign out?")
+        }
+        .alert("Delete Application", isPresented: $showingDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {
+                showingDeleteConfirmation = false
+            }
+            Button("Delete", role: .destructive) {
+                Task {
+                    await appState.deleteApplication(applicationId: application.id)
+                }
+            }
+        } message: {
+            Text("Are you sure you want to delete this application? This action cannot be undone and will also delete all related activities.")
         }
     }
     
@@ -177,6 +195,14 @@ struct ApplicationDetailView: View {
                 Label("Add Note", systemImage: "note.text")
             }
             .disabled(isProcessingQuickAction)
+            
+            Divider()
+            
+            Button(role: .destructive, action: {
+                showingDeleteConfirmation = true
+            }) {
+                Label("Delete Application", systemImage: "trash")
+            }
         } label: {
             HStack(spacing: 6) {
                 if isProcessingQuickAction {
@@ -196,6 +222,28 @@ struct ApplicationDetailView: View {
             .clipShape(Capsule())
         }
         .menuStyle(.borderlessButton)
+    }
+    
+    private var statusAndActionsSection: some View {
+        VStack(spacing: 16) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Status")
+                        .font(.system(size: 20, weight: .bold))
+                }
+                
+                Spacer()
+            }
+            
+            HStack {
+                StatusBadge(status: application.status, compact: false, showIcon: true)
+                
+                Spacer()
+            }
+            .padding(16)
+            .background(Color(NSColor.controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
     }
     
     private var metadataSection: some View {
