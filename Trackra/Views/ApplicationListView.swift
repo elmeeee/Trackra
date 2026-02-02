@@ -110,7 +110,7 @@ struct ApplicationListView: View {
 
             Divider()
 
-            if appState.isLoading && appState.applications.isEmpty {
+            if appState.isLoading {
                 SkeletonLoadingView()
             } else if let error = appState.error, appState.applications.isEmpty {
                 ErrorView(error: error) {
@@ -169,7 +169,8 @@ struct ApplicationListView: View {
         case .technicalTest: return .purple
         case .interview: return .indigo
         case .offering: return .green
-        case .rejected, .withdrawn: return .gray
+        case .rejected: return .red
+        case .withdrawn: return .gray
         case .noResponse: return .orange
         }
     }

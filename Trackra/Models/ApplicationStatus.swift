@@ -35,7 +35,8 @@ enum ApplicationStatus: String, Codable, CaseIterable {
         case .technicalTest: return "purple"
         case .interview: return "indigo"
         case .offering: return "green"
-        case .rejected, .withdrawn: return "gray"
+        case .rejected: return "red"
+        case .withdrawn: return "gray"
         case .noResponse: return "orange"
         }
     }

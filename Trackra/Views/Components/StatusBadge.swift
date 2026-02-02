@@ -69,7 +69,9 @@ struct StatusBadge: View {
             return .indigo
         case .offering:
             return .green
-        case .rejected, .withdrawn:
+        case .rejected:
+            return .red
+        case .withdrawn:
             return .gray
         case .noResponse:
             return .orange

@@ -14,30 +14,30 @@ struct ApplicationDetailView: View {
     @State private var isProcessingQuickAction = false
     @State private var showingLogoutConfirmation = false
     @State private var showingDeleteConfirmation = false
-    
+
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
                 headerSection
-                
+
                 Divider()
                     .padding(.vertical, 20)
-                
+
                 metadataSection
-                
+
                 Divider()
                     .padding(.vertical, 20)
-                
+
                 statusAndActionsSection
-                
+
                 if application.status == .noResponse {
                     followUpBanner
                         .padding(.top, 20)
                 }
-                
+
                 Divider()
                     .padding(.vertical, 20)
-                
+
                 timelineSection
             }
             .padding(24)
@@ -74,10 +74,12 @@ struct ApplicationDetailView: View {
                 }
             }
         } message: {
-            Text("Are you sure you want to delete this application? This action cannot be undone and will also delete all related activities.")
+            Text(
+                "Are you sure you want to delete this application? This action cannot be undone and will also delete all related activities."
+            )
         }
     }
-    
+
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack(alignment: .top, spacing: 16) {
@@ -86,45 +88,45 @@ struct ApplicationDetailView: View {
                         .font(.system(size: 24, weight: .semibold))
                         .foregroundColor(.primary)
                         .lineLimit(2)
-                    
+
                     HStack(spacing: 8) {
                         Image(systemName: "building.2.fill")
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.secondary)
-                        
+
                         Text(application.company)
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.secondary)
                     }
                 }
-                
+
                 Spacer()
-                
+
                 quickActionsMenu
             }
-            
+
             HStack(spacing: 10) {
                 StatusBadge(status: application.status, compact: false, showIcon: true)
-                
+
                 if application.status != .rejected {
                     Divider()
                         .frame(height: 20)
-                    
+
                     HStack(spacing: 6) {
                         Image(systemName: "clock.fill")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.secondary)
-                        
+
                         Text("\(application.daysSinceLastActivity) days ago")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(.secondary)
                     }
                 }
-                
+
                 if application.status == .noResponse {
                     Divider()
                         .frame(height: 20)
-                    
+
                     HStack(spacing: 6) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.system(size: 12, weight: .medium))
@@ -147,60 +149,116 @@ struct ApplicationDetailView: View {
                 .fill(Color(nsColor: .controlBackgroundColor))
         )
     }
-    
+
     private var quickActionsMenu: some View {
         Menu {
-            Button(action: {
-                appState.showingAddActivity = true
-            }) {
-                Label("Interview Scheduled", systemImage: "calendar.badge.clock")
+            Section("Interview") {
+                Button(action: {
+                    handleQuickAction(.hrScreen)
+                }) {
+                    Label("HR Screen", systemImage: "person.wave.2")
+                }
+                .disabled(isProcessingQuickAction)
+
+                Button(action: {
+                    handleQuickAction(.recruiterCall)
+                }) {
+                    Label("Recruiter Call", systemImage: "phone")
+                }
+                .disabled(isProcessingQuickAction)
+
+                Button(action: {
+                    handleQuickAction(.hiringManagerInterview)
+                }) {
+                    Label("Hiring Manager", systemImage: "person.crop.circle.badge.checkmark")
+                }
+                .disabled(isProcessingQuickAction)
+
+                Button(action: {
+                    handleQuickAction(.panelInterview)
+                }) {
+                    Label("Panel Interview", systemImage: "person.3")
+                }
+                .disabled(isProcessingQuickAction)
+
+                Button(action: {
+                    handleQuickAction(.onsiteInterview)
+                }) {
+                    Label("Onsite Interview", systemImage: "building.2")
+                }
+                .disabled(isProcessingQuickAction)
+
+                Button(action: {
+                    appState.showingAddActivity = true
+                }) {
+                    Label("Interview Scheduled", systemImage: "calendar.badge.clock")
+                }
+                .disabled(isProcessingQuickAction)
+
+                Button(action: {
+                    handleQuickAction(.interviewDone)
+                }) {
+                    Label("Interview Done", systemImage: "checkmark.circle")
+                }
+                .disabled(isProcessingQuickAction)
+
+                Button(action: {
+                    handleQuickAction(.followUp)
+                }) {
+                    Label("Follow Up", systemImage: "arrow.turn.up.right")
+                }
+                .disabled(isProcessingQuickAction)
             }
-            .disabled(isProcessingQuickAction)
-            
-            Button(action: {
-                handleQuickAction(.interviewDone)
-            }) {
-                Label("Interview Done", systemImage: "checkmark.circle")
+
+            Section("Technical") {
+                Button(action: {
+                    handleQuickAction(.technicalTest)
+                }) {
+                    Label("Technical Test", systemImage: "laptopcomputer")
+                }
+                .disabled(isProcessingQuickAction)
+
+                Button(action: {
+                    handleQuickAction(.takeHomeTest)
+                }) {
+                    Label("Take Home Test", systemImage: "doc.text")
+                }
+                .disabled(isProcessingQuickAction)
             }
-            .disabled(isProcessingQuickAction)
-            
-            Button(action: {
-                handleQuickAction(.followUp)
-            }) {
-                Label("Follow Up", systemImage: "arrow.turn.up.right")
+
+            Section("Final") {
+                Button(action: {
+                    handleQuickAction(.offerReceived)
+                }) {
+                    Label("Offer Received", systemImage: "gift")
+                }
+                .disabled(isProcessingQuickAction)
+
+                Button(action: {
+                    handleQuickAction(.rejected)
+                }) {
+                    Label("Rejection", systemImage: "xmark.circle")
+                }
+                .disabled(isProcessingQuickAction)
             }
-            .disabled(isProcessingQuickAction)
-            
+
             Divider()
-            
-            Button(action: {
-                handleQuickAction(.offerReceived)
-            }) {
-                Label("Offer Received", systemImage: "gift")
-            }
-            .disabled(isProcessingQuickAction)
-            
-            Button(action: {
-                handleQuickAction(.rejected)
-            }) {
-                Label("Rejection", systemImage: "xmark.circle")
-            }
-            .disabled(isProcessingQuickAction)
-            
-            Divider()
-            
+
             Button(action: {
                 appState.showingAddActivity = true
             }) {
                 Label("Add Note", systemImage: "note.text")
             }
             .disabled(isProcessingQuickAction)
-            
+
             Divider()
-            
-            Button(role: .destructive, action: {
-                showingDeleteConfirmation = true
-            }) {
+
+            Button(
+                role: .destructive,
+                action: {
+                    showingDeleteConfirmation = true
+                }
+            ) {
                 Label("Delete Application", systemImage: "trash")
             }
         } label: {
@@ -223,7 +281,7 @@ struct ApplicationDetailView: View {
         }
         .menuStyle(.borderlessButton)
     }
-    
+
     private var statusAndActionsSection: some View {
         VStack(spacing: 16) {
             HStack {
@@ -231,13 +289,13 @@ struct ApplicationDetailView: View {
                     Text("Status")
                         .font(.system(size: 20, weight: .bold))
                 }
-                
+
                 Spacer()
             }
-            
+
             HStack {
                 StatusBadge(status: application.status, compact: false, showIcon: true)
-                
+
                 Spacer()
             }
             .padding(16)
@@ -245,7 +303,7 @@ struct ApplicationDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
-    
+
     private var metadataSection: some View {
         VStack(spacing: 16) {
             HStack(spacing: 20) {
@@ -254,7 +312,7 @@ struct ApplicationDetailView: View {
                     title: "Applied",
                     value: formatDate(application.appliedAt)
                 )
-                
+
                 if !application.location.isEmpty {
                     metadataCard(
                         icon: "location.fill",
@@ -263,7 +321,7 @@ struct ApplicationDetailView: View {
                     )
                 }
             }
-            
+
             if !application.salaryRange.isEmpty || !application.source.isEmpty {
                 HStack(spacing: 20) {
                     if !application.salaryRange.isEmpty {
@@ -273,7 +331,7 @@ struct ApplicationDetailView: View {
                             value: application.salaryRange
                         )
                     }
-                    
+
                     if !application.source.isEmpty {
                         metadataCard(
                             icon: "link.circle.fill",
@@ -285,50 +343,50 @@ struct ApplicationDetailView: View {
             }
         }
     }
-    
+
     private func metadataCard(icon: String, title: String, value: String) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 20, weight: .medium))
                 .foregroundColor(.accentColor)
                 .frame(width: 32, height: 32)
-            
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.secondary)
                     .textCase(.uppercase)
-                
+
                 Text(value)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.primary)
             }
-            
+
             Spacer()
         }
         .padding(12)
         .background(Color(NSColor.controlBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
-    
+
     private var followUpBanner: some View {
         HStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundColor(.orange)
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 Text("Follow-up Recommended")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.primary)
-                
+
                 Text("No response for 14+ days. Consider reaching out.")
                     .font(.system(size: 13, weight: .regular))
                     .foregroundColor(.secondary)
             }
-            
+
             Spacer()
-            
+
             Button(action: {
                 Task {
                     await appState.createActivity(
@@ -359,33 +417,33 @@ struct ApplicationDetailView: View {
                 .strokeBorder(Color.orange.opacity(0.2), lineWidth: 1)
         )
     }
-    
+
     private var timelineSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Timeline")
                         .font(.system(size: 20, weight: .bold))
-                    
+
                     Text("\(application.activities.count + 1) events")
                         .font(.system(size: 13, weight: .regular))
                         .foregroundColor(.secondary)
                 }
-                
+
                 Spacer()
             }
-            
+
             ActivityTimelineView(application: application)
         }
     }
-    
+
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return formatter.string(from: date)
     }
-    
+
     private func handleQuickAction(_ activityType: ActivityType) {
         Task {
             isProcessingQuickAction = true

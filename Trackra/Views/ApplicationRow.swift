@@ -24,16 +24,6 @@ struct ApplicationRow: View {
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(.primary)
                             .lineLimit(1)
-
-                        if isRecentlyAdded {
-                            Text("NEW")
-                                .font(.system(size: 9, weight: .bold))
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.blue)
-                                .foregroundColor(.white)
-                                .clipShape(Capsule())
-                        }
                     }
 
                     Text(application.company)
@@ -62,45 +52,10 @@ struct ApplicationRow: View {
             VStack(alignment: .trailing, spacing: 4) {
                 StatusBadge(status: application.status, compact: false, showIcon: false)
 
-                // Quick Action Menu Button
                 if isProcessing {
                     ProgressView()
                         .scaleEffect(0.6)
                         .frame(width: 20, height: 20)
-                } else {
-                    Menu {
-                        Section("Interview") {
-                            Button("HR Screen", action: { onActivityCreated(.hrScreen) })
-                            Button("Recruiter Call", action: { onActivityCreated(.recruiterCall) })
-                            Button(
-                                "Hiring Manager",
-                                action: { onActivityCreated(.hiringManagerInterview) }
-                            )
-                            Button(
-                                "Panel Interview", action: { onActivityCreated(.panelInterview) })
-                            Button(
-                                "Onsite Interview", action: { onActivityCreated(.onsiteInterview) })
-                            Button("Interview Done", action: { onActivityCreated(.interviewDone) })
-                        }
-
-                        Section("Technical") {
-                            Button("Technical Test", action: { onActivityCreated(.technicalTest) })
-                            Button("Take Home Test", action: { onActivityCreated(.takeHomeTest) })
-                        }
-
-                        Section("Final") {
-                            Button(
-                                "Mark as Rejected", role: .destructive,
-                                action: { onActivityCreated(.rejected) })
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .font(.system(size: 20))
-                            .foregroundColor(.secondary)
-                            .contentShape(Rectangle())
-                    }
-                    .menuStyle(.borderlessButton)
-                    .fixedSize()
                 }
             }
         }
@@ -130,6 +85,7 @@ struct ApplicationRow: View {
             Button("Technical Test", action: { onActivityCreated(.technicalTest) })
             Button("Take Home Test", action: { onActivityCreated(.takeHomeTest) })
             Divider()
+            Button("Offer Received", action: { onActivityCreated(.offerReceived) })
             Button("Mark as Rejected", role: .destructive, action: { onActivityCreated(.rejected) })
         }
     }
@@ -162,12 +118,6 @@ struct ApplicationRow: View {
         if days == 0 { return "Today" }
         if days == 1 { return "1 day ago" }
         return "\(days) days ago"
-    }
-
-    private var isRecentlyAdded: Bool {
-        // Created within last 24 hours
-        let twentyFourHours: TimeInterval = 24 * 60 * 60
-        return Date().timeIntervalSince(application.createdAt) < twentyFourHours
     }
 }
 
