@@ -100,7 +100,8 @@ final class AuthenticationManager: ObservableObject {
     }
 
     func logout() {
-        _ = keychain.clearAll()
+        _ = keychain.deleteApiKey()
+        // Don't clear email so Remember Me works
         userEmail = nil
         authState = .login
     }
