@@ -12,7 +12,7 @@ struct LoginView: View {
     @ObservedObject var authManager: AuthenticationManager
     @State private var email = ""
     @State private var password = ""
-    @State private var rememberMe = true
+    @State private var rememberMe = false
     @State private var isAnimating = false
     @State private var showError = false
 
