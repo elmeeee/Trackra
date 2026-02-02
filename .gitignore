@@ -1,0 +1,21 @@
+# Release script (contains sensitive info)
+release.sh
+
+# macOS
+.DS_Store
+*.dmg
+
+# Build artifacts
+*.app
+build/
+dist/
+
+# Xcode
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+
+# Secrets
+*.pem
+*.p12
+*.mobileprovision
