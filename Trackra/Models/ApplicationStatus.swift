@@ -10,27 +10,32 @@ import Foundation
 
 enum ApplicationStatus: String, Codable, CaseIterable {
     case applied
+    case technicalTest = "technical_test"
     case interview
     case offering
     case rejected
+    case withdrawn
     case noResponse = "no_response"
-    
+
     var displayName: String {
         switch self {
         case .applied: return "Applied"
+        case .technicalTest: return "Technical"
         case .interview: return "Interview"
-        case .offering: return "Offering"
+        case .offering: return "Offer"
         case .rejected: return "Rejected"
+        case .withdrawn: return "Withdrawn"
         case .noResponse: return "No Response"
         }
     }
-    
+
     var color: String {
         switch self {
         case .applied: return "blue"
-        case .interview: return "purple"
+        case .technicalTest: return "purple"
+        case .interview: return "indigo"
         case .offering: return "green"
-        case .rejected: return "red"
+        case .rejected, .withdrawn: return "gray"
         case .noResponse: return "orange"
         }
     }

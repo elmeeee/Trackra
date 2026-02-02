@@ -11,47 +11,96 @@ import SwiftUI
 struct ApplicationRow: View {
     let application: Application
     let isSelected: Bool
+    let isProcessing: Bool
+    var onActivityCreated: (ActivityType) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(application.role)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .lineLimit(2)
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                // Title Section
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text(application.role)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+
+                        if isRecentlyAdded {
+                            Text("NEW")
+                                .font(.system(size: 9, weight: .bold))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .clipShape(Capsule())
+                        }
+                    }
 
                     Text(application.company)
-                        .font(.system(size: 13, weight: .regular))
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                 }
 
-                Spacer()
+                // Chips Section
+                HStack(spacing: 6) {
+                    // Last Stage Chip
+                    ChipView(
+                        text: lastStageLabel, color: .primary.opacity(0.8),
+                        bgColor: Color(NSColor.controlBackgroundColor))
 
-                if application.status == .noResponse {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .font(.system(size: 16))
-                        .foregroundColor(.orange)
+                    // Time Chip
+                    ChipView(
+                        text: timeAgoLabel, color: .secondary,
+                        bgColor: Color(NSColor.controlBackgroundColor))
                 }
             }
 
-            HStack(spacing: 8) {
-                StatusBadge(status: application.status, compact: true)
+            Spacer()
 
-                Spacer()
+            // Right Side: Status Badge
+            VStack(alignment: .trailing, spacing: 4) {
+                StatusBadge(status: application.status, compact: false, showIcon: false)
 
-                // Only show timestamp for non-rejected applications
-                if application.status != .rejected {
-                    HStack(spacing: 4) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 11, weight: .medium))
+                // Quick Action Menu Button
+                if isProcessing {
+                    ProgressView()
+                        .scaleEffect(0.6)
+                        .frame(width: 20, height: 20)
+                } else {
+                    Menu {
+                        Section("Interview") {
+                            Button("HR Screen", action: { onActivityCreated(.hrScreen) })
+                            Button("Recruiter Call", action: { onActivityCreated(.recruiterCall) })
+                            Button(
+                                "Hiring Manager",
+                                action: { onActivityCreated(.hiringManagerInterview) }
+                            )
+                            Button(
+                                "Panel Interview", action: { onActivityCreated(.panelInterview) })
+                            Button(
+                                "Onsite Interview", action: { onActivityCreated(.onsiteInterview) })
+                            Button("Interview Done", action: { onActivityCreated(.interviewDone) })
+                        }
+
+                        Section("Technical") {
+                            Button("Technical Test", action: { onActivityCreated(.technicalTest) })
+                            Button("Take Home Test", action: { onActivityCreated(.takeHomeTest) })
+                        }
+
+                        Section("Final") {
+                            Button(
+                                "Mark as Rejected", role: .destructive,
+                                action: { onActivityCreated(.rejected) })
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .font(.system(size: 20))
                             .foregroundColor(.secondary)
-
-                        Text("\(application.daysSinceLastActivity) days ago")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.secondary)
+                            .contentShape(Rectangle())
                     }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
                 }
             }
         }
@@ -70,5 +119,74 @@ struct ApplicationRow: View {
                 )
         )
         .shadow(color: Color.black.opacity(0.05), radius: isSelected ? 4 : 2, x: 0, y: 1)
+        .contextMenu {
+            Button("HR Screen", action: { onActivityCreated(.hrScreen) })
+            Button("Recruiter Call", action: { onActivityCreated(.recruiterCall) })
+            Button("Hiring Manager", action: { onActivityCreated(.hiringManagerInterview) })
+            Button("Panel Interview", action: { onActivityCreated(.panelInterview) })
+            Button("Onsite Interview", action: { onActivityCreated(.onsiteInterview) })
+            Button("Interview Done", action: { onActivityCreated(.interviewDone) })
+            Divider()
+            Button("Technical Test", action: { onActivityCreated(.technicalTest) })
+            Button("Take Home Test", action: { onActivityCreated(.takeHomeTest) })
+            Divider()
+            Button("Mark as Rejected", role: .destructive, action: { onActivityCreated(.rejected) })
+        }
+    }
+
+    private var lastStageLabel: String {
+        guard let latestActivity = application.activities.max(by: { $0.occurredAt < $1.occurredAt })
+        else {
+            return "Applied"
+        }
+
+        switch latestActivity.type {
+        case .hrScreen: return "HR Screen"
+        case .recruiterCall: return "Recruiter Call"
+        case .hiringManagerInterview: return "Hiring Manager"
+        case .panelInterview: return "Panel Interview"
+        case .onsiteInterview: return "Onsite Interview"
+        case .interviewScheduled: return "Interview Scheduled"
+        case .interviewDone: return "Interview Done"
+        case .technicalTest: return "Technical Test"
+        case .takeHomeTest: return "Take Home Test"
+        case .offerReceived: return "Offer"
+        case .rejected: return "Rejected"
+        case .note: return "Note"
+        case .followUp: return "Follow Up"
+        }
+    }
+
+    private var timeAgoLabel: String {
+        let days = application.daysSinceLastActivity
+        if days == 0 { return "Today" }
+        if days == 1 { return "1 day ago" }
+        return "\(days) days ago"
+    }
+
+    private var isRecentlyAdded: Bool {
+        // Created within last 24 hours
+        let twentyFourHours: TimeInterval = 24 * 60 * 60
+        return Date().timeIntervalSince(application.createdAt) < twentyFourHours
+    }
+}
+
+struct ChipView: View {
+    let text: String
+    let color: Color
+    let bgColor: Color
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundColor(color)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(bgColor)
+            .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5)
+            )
     }
 }

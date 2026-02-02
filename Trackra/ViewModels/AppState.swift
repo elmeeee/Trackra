@@ -18,6 +18,7 @@ final class AppState: ObservableObject {
     @Published var error: APIError?
     @Published var showingAddApplication = false
     @Published var showingAddActivity = false
+    @Published var processingApplicationId: String?
     @Published var successMessage: String?
 
     private let apiClient: APIClientProtocol
@@ -104,7 +105,7 @@ final class AppState: ObservableObject {
             return
         }
 
-        isLoading = true
+        processingApplicationId = applicationId
         error = nil
 
         do {
@@ -123,7 +124,7 @@ final class AppState: ObservableObject {
             error = .networkError(networkError)
         }
 
-        isLoading = false
+        processingApplicationId = nil
     }
 
     func updateStatus(applicationId: String, newStatus: ApplicationStatus) async {
@@ -192,6 +193,20 @@ final class AppState: ObservableObject {
 
     private func getSuccessMessage(for activityType: ActivityType) -> String {
         switch activityType {
+        case .hrScreen:
+            return "HR screen recorded successfully!"
+        case .recruiterCall:
+            return "Recruiter call recorded successfully!"
+        case .hiringManagerInterview:
+            return "Hiring manager interview recorded!"
+        case .panelInterview:
+            return "Panel interview recorded!"
+        case .onsiteInterview:
+            return "Onsite interview recorded!"
+        case .technicalTest:
+            return "Technical test recorded!"
+        case .takeHomeTest:
+            return "Take-home test recorded!"
         case .interviewScheduled:
             return "Interview scheduled successfully!"
         case .interviewDone:

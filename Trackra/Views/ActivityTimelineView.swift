@@ -10,11 +10,11 @@ import SwiftUI
 
 struct ActivityTimelineView: View {
     let application: Application
-    
+
     private var sortedActivities: [Activity] {
         application.activities.sorted { $0.occurredAt > $1.occurredAt }
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(sortedActivities.enumerated()), id: \.element.id) { index, activity in
@@ -27,7 +27,7 @@ struct ActivityTimelineView: View {
                     isLast: false
                 )
             }
-            
+
             timelineItem(
                 icon: "paperplane.fill",
                 title: "Application Submitted",
@@ -38,28 +38,30 @@ struct ActivityTimelineView: View {
             )
         }
     }
-    
-    private func timelineItem(icon: String, title: String, date: Date, note: String, color: Color, isLast: Bool) -> some View {
+
+    private func timelineItem(
+        icon: String, title: String, date: Date, note: String, color: Color, isLast: Bool
+    ) -> some View {
         HStack(alignment: .top, spacing: 16) {
             VStack(spacing: 0) {
                 ZStack {
                     Circle()
                         .fill(color)
                         .frame(width: 10, height: 10)
-                    
+
                     Circle()
                         .strokeBorder(color.opacity(0.3), lineWidth: 4)
                         .frame(width: 20, height: 20)
                 }
                 .frame(height: 32)
-                
+
                 if !isLast {
                     Rectangle()
                         .fill(Color.secondary.opacity(0.2))
                         .frame(width: 2)
                 }
             }
-            
+
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -67,16 +69,16 @@ struct ActivityTimelineView: View {
                             Image(systemName: icon)
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(color)
-                            
+
                             Text(title)
                                 .font(.system(size: 15, weight: .semibold))
                                 .foregroundColor(.primary)
                         }
-                        
+
                         Text(formatDate(date))
                             .font(.system(size: 13, weight: .regular))
                             .foregroundColor(.secondary)
-                        
+
                         if !note.isEmpty {
                             Text(note)
                                 .font(.system(size: 14, weight: .regular))
@@ -85,7 +87,7 @@ struct ActivityTimelineView: View {
                                 .padding(.bottom, 4)
                         }
                     }
-                    
+
                     Spacer()
                 }
                 .padding(.vertical, 8)
@@ -98,11 +100,15 @@ struct ActivityTimelineView: View {
             .padding(.bottom, isLast ? 0 : 12)
         }
     }
-    
+
     private func activityColor(for type: ActivityType) -> Color {
         switch type {
-        case .interviewScheduled:
+        case .hrScreen, .recruiterCall:
+            return .blue
+        case .hiringManagerInterview, .panelInterview, .onsiteInterview, .interviewScheduled:
             return .purple
+        case .technicalTest, .takeHomeTest:
+            return .indigo
         case .interviewDone:
             return .green
         case .offerReceived:
@@ -115,7 +121,7 @@ struct ActivityTimelineView: View {
             return .orange
         }
     }
-    
+
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
