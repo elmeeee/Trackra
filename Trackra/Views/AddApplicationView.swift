@@ -15,7 +15,7 @@ struct AddApplicationView: View {
     @State private var role = ""
     @State private var company = ""
     @State private var appliedAt = Date()
-    @State private var source = ""
+    @State private var source = "LinkedIn"
     @State private var salaryRange = ""
     @State private var location = ""
     @State private var url = ""
@@ -49,7 +49,16 @@ struct AddApplicationView: View {
                 }
                 
                 Section {
-                    TextField("Source (optional)", text: $source)
+                    Picker("Source (optional)", selection: $source) {
+                        Text("LinkedIn").tag("LinkedIn")
+                        Text("Indeed").tag("Indeed")
+                        Text("Glassdoor").tag("Glassdoor")
+                        Text("Company Portal").tag("Company Portal")
+                        Text("Job Portal").tag("Job Portal")
+                        Text("Referral").tag("Referral")
+                        Text("Recruiter").tag("Recruiter")
+                        Text("Other").tag("Other")
+                    }
                     TextField("Salary Range (optional)", text: $salaryRange)
                     TextField("Location (optional)", text: $location)
                     TextField("URL (optional)", text: $url)

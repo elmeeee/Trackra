@@ -111,7 +111,7 @@ final class AppState: ObservableObject {
                 note: note
             )
             await loadApplications()
-            successMessage = "Activity added successfully!"
+            successMessage = getSuccessMessage(for: type)
         } catch let apiError as APIError {
             error = apiError
         } catch let networkError {
@@ -123,5 +123,22 @@ final class AppState: ObservableObject {
     
     func refresh() async {
         await loadApplications()
+    }
+    
+    private func getSuccessMessage(for activityType: ActivityType) -> String {
+        switch activityType {
+        case .interviewScheduled:
+            return "Interview scheduled successfully!"
+        case .interviewDone:
+            return "Interview marked as done!"
+        case .followUp:
+            return "Follow-up added successfully!"
+        case .offerReceived:
+            return "Offer received! Congratulations!"
+        case .rejected:
+            return "Application marked as rejected"
+        case .note:
+            return "Note added successfully!"
+        }
     }
 }
