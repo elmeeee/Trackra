@@ -14,6 +14,7 @@ struct MainContentView: View {
     @StateObject private var notificationManager = NotificationManager.shared
     @FocusState private var focusedField: FocusField?
     @State private var showingNotifications = false
+    @State private var showingLogoutConfirmation = false
     
     init(authManager: AuthenticationManager) {
         self.authManager = authManager
@@ -33,7 +34,7 @@ struct MainContentView: View {
                 ApplicationDetailView(appState: appState, application: application)
             } else {
                 EmptyStateView(
-                    icon: "",
+                    icon: "tray.fill",
                     title: "No Selection",
                     message: "Select an application from the list to view details."
                 )
@@ -119,7 +120,7 @@ struct MainContentView: View {
                     Divider()
                     
                     Button(action: {
-                        authManager.logout()
+                        showingLogoutConfirmation = true
                     }) {
                         Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
                     }
@@ -152,6 +153,25 @@ struct MainContentView: View {
             notificationManager.stopPolling()
         }
         .focusedSceneValue(\.appState, appState)
+        .alert("Success", isPresented: .constant(appState.successMessage != nil)) {
+            Button("OK") {
+                appState.successMessage = nil
+            }
+        } message: {
+            if let message = appState.successMessage {
+                Text(message)
+            }
+        }
+        .alert("Sign Out", isPresented: $showingLogoutConfirmation) {
+            Button("Cancel", role: .cancel) {
+                showingLogoutConfirmation = false
+            }
+            Button("Sign Out", role: .destructive) {
+                authManager.logout()
+            }
+        } message: {
+            Text("Are you sure you want to sign out?")
+        }
     }
     
     private func setupNotifications() {

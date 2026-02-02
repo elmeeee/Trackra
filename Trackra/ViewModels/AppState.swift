@@ -18,9 +18,10 @@ final class AppState: ObservableObject {
     @Published var error: APIError?
     @Published var showingAddApplication = false
     @Published var showingAddActivity = false
+    @Published var successMessage: String?
     
     private let apiClient: APIClientProtocol
-    private let authManager: AuthenticationManager
+    let authManager: AuthenticationManager
     
     init(apiClient: APIClientProtocol = APIClient(), authManager: AuthenticationManager) {
         self.apiClient = apiClient
@@ -82,6 +83,7 @@ final class AppState: ObservableObject {
                 url: url
             )
             await loadApplications()
+            successMessage = "Application added successfully!"
         } catch let apiError as APIError {
             error = apiError
         } catch let networkError {
@@ -109,6 +111,7 @@ final class AppState: ObservableObject {
                 note: note
             )
             await loadApplications()
+            successMessage = "Activity added successfully!"
         } catch let apiError as APIError {
             error = apiError
         } catch let networkError {

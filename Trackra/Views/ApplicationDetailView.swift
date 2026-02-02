@@ -12,6 +12,7 @@ struct ApplicationDetailView: View {
     @ObservedObject var appState: AppState
     let application: Application
     @State private var isProcessingQuickAction = false
+    @State private var showingLogoutConfirmation = false
     
     var body: some View {
         ScrollView {
@@ -75,7 +76,7 @@ struct ApplicationDetailView: View {
             ToolbarItem(placement: .automatic) {
                 Menu {
                     Button(action: {
-                        // Logout action
+                        showingLogoutConfirmation = true
                     }) {
                         Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
                     }
@@ -90,6 +91,16 @@ struct ApplicationDetailView: View {
         }
         .navigationTitle(application.role)
         .navigationSubtitle(application.company)
+        .alert("Sign Out", isPresented: $showingLogoutConfirmation) {
+            Button("Cancel", role: .cancel) {
+                showingLogoutConfirmation = false
+            }
+            Button("Sign Out", role: .destructive) {
+                appState.authManager.logout()
+            }
+        } message: {
+            Text("Are you sure you want to sign out?")
+        }
     }
     
     private var headerSection: some View {
@@ -377,10 +388,6 @@ struct ApplicationDetailView: View {
                 occurredAt: Date(),
                 note: ""
             )
-            // Refresh data after quick action
-            if appState.error == nil {
-                await appState.refresh()
-            }
             isProcessingQuickAction = false
         }
     }
