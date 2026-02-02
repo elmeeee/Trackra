@@ -44,8 +44,6 @@ struct ApplicationListView: View {
             
             if appState.isLoading && appState.applications.isEmpty {
                 SkeletonLoadingView()
-                    .padding(.horizontal, 12)
-                    .padding(.top, 12)
             } else if let error = appState.error, appState.applications.isEmpty {
                 ErrorView(error: error) {
                     Task {

@@ -19,6 +19,7 @@ struct AddApplicationView: View {
     @State private var salaryRange = ""
     @State private var location = ""
     @State private var url = ""
+    @State private var isSubmitting = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -55,6 +56,7 @@ struct AddApplicationView: View {
                 }
             }
             .formStyle(.grouped)
+            .disabled(isSubmitting)
             
             Divider()
             
@@ -63,11 +65,13 @@ struct AddApplicationView: View {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
+                .disabled(isSubmitting)
                 
                 Spacer()
                 
-                Button("Add Application") {
+                Button(action: {
                     Task {
+                        isSubmitting = true
                         await appState.createApplication(
                             role: role,
                             company: company,
@@ -77,11 +81,23 @@ struct AddApplicationView: View {
                             location: location,
                             url: url
                         )
-                        dismiss()
+                        isSubmitting = false
+                        if appState.error == nil {
+                            dismiss()
+                        }
+                    }
+                }) {
+                    HStack {
+                        if isSubmitting {
+                            ProgressView()
+                                .controlSize(.small)
+                                .padding(.trailing, 4)
+                        }
+                        Text(isSubmitting ? "Adding..." : "Add Application")
                     }
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(role.isEmpty || company.isEmpty)
+                .disabled(role.isEmpty || company.isEmpty || isSubmitting)
             }
             .padding()
         }

@@ -9,8 +9,14 @@
 import SwiftUI
 
 struct MainContentView: View {
-    @StateObject private var appState = AppState()
+    let authManager: AuthenticationManager
+    @StateObject private var appState: AppState
     @FocusState private var focusedField: FocusField?
+    
+    init(authManager: AuthenticationManager) {
+        self.authManager = authManager
+        _appState = StateObject(wrappedValue: AppState(authManager: authManager))
+    }
     
     enum FocusField {
         case list
@@ -25,7 +31,7 @@ struct MainContentView: View {
                 ApplicationDetailView(appState: appState, application: application)
             } else {
                 EmptyStateView(
-                    icon: "arrow.left",
+                    icon: "",
                     title: "No Selection",
                     message: "Select an application from the list to view details."
                 )
@@ -33,7 +39,16 @@ struct MainContentView: View {
         }
         .navigationSplitViewStyle(.balanced)
         .task {
-            await appState.loadApplications()
+            if authManager.authState == .authenticated {
+                await appState.loadApplications()
+            }
+        }
+        .onChange(of: authManager.authState) { oldValue, newValue in
+            if newValue == .authenticated {
+                Task {
+                    await appState.loadApplications()
+                }
+            }
         }
         .sheet(isPresented: $appState.showingAddApplication) {
             AddApplicationView(appState: appState)
@@ -44,15 +59,54 @@ struct MainContentView: View {
             }
         }
         .toolbar {
+            ToolbarItem(placement: .navigation) {
+                Menu {
+                    if let email = authManager.userEmail {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(email)
+                                .font(.system(size: 13, weight: .medium))
+                            Text("Signed in")
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    
+                    Divider()
+                    
+                    Button(action: {
+                        authManager.logout()
+                    }) {
+                        Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                    }
+                    .keyboardShortcut("q", modifiers: [.command, .shift])
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "person.circle.fill")
+                            .font(.system(size: 20))
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(.tint)
+                        
+                        if let email = authManager.userEmail {
+                            Text(email)
+                                .font(.system(size: 13, weight: .medium))
+                                .lineLimit(1)
+                        }
+                    }
+                }
+                .help("Account")
+            }
+            
             ToolbarItem(placement: .automatic) {
                 Button(action: {
                     Task {
                         await appState.refresh()
                     }
                 }) {
-                    Image(systemName: "arrow.clockwise")
+                    Label("Refresh", systemImage: "arrow.clockwise")
+                        .labelStyle(.iconOnly)
                 }
-                .help("Refresh")
+                .help("Refresh applications")
                 .disabled(appState.isLoading)
             }
         }

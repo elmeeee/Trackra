@@ -20,9 +20,11 @@ final class AppState: ObservableObject {
     @Published var showingAddActivity = false
     
     private let apiClient: APIClientProtocol
+    private let authManager: AuthenticationManager
     
-    init(apiClient: APIClientProtocol = APIClient()) {
+    init(apiClient: APIClientProtocol = APIClient(), authManager: AuthenticationManager) {
         self.apiClient = apiClient
+        self.authManager = authManager
     }
     
     var selectedApplication: Application? {
@@ -39,11 +41,17 @@ final class AppState: ObservableObject {
     }
     
     func loadApplications() async {
+        guard let apiKey = authManager.getApiKey(), !apiKey.isEmpty else {
+            // Don't show error if not authenticated, just return
+            isLoading = false
+            return
+        }
+        
         isLoading = true
         error = nil
         
         do {
-            applications = try await apiClient.fetchApplications()
+            applications = try await apiClient.fetchApplications(apiKey: apiKey)
         } catch let apiError as APIError {
             error = apiError
         } catch let networkError {
@@ -54,11 +62,17 @@ final class AppState: ObservableObject {
     }
     
     func createApplication(role: String, company: String, appliedAt: Date, source: String, salaryRange: String, location: String, url: String) async {
+        guard let apiKey = authManager.getApiKey(), !apiKey.isEmpty else {
+            error = .serverError("Not authenticated")
+            return
+        }
+        
         isLoading = true
         error = nil
         
         do {
             _ = try await apiClient.createApplication(
+                apiKey: apiKey,
                 role: role,
                 company: company,
                 appliedAt: appliedAt,
@@ -78,11 +92,17 @@ final class AppState: ObservableObject {
     }
     
     func createActivity(applicationId: String, type: ActivityType, occurredAt: Date, note: String) async {
+        guard let apiKey = authManager.getApiKey(), !apiKey.isEmpty else {
+            error = .serverError("Not authenticated")
+            return
+        }
+        
         isLoading = true
         error = nil
         
         do {
             _ = try await apiClient.createActivity(
+                apiKey: apiKey,
                 applicationId: applicationId,
                 type: type,
                 occurredAt: occurredAt,

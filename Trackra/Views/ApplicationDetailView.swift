@@ -11,6 +11,7 @@ import SwiftUI
 struct ApplicationDetailView: View {
     @ObservedObject var appState: AppState
     let application: Application
+    @State private var isProcessingQuickAction = false
     
     var body: some View {
         ScrollView {
@@ -34,23 +35,36 @@ struct ApplicationDetailView: View {
             }
             .padding(24)
         }
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                Button(action: {
+                    appState.selectedApplicationId = nil
+                }) {
+                    Label("Back", systemImage: "chevron.left")
+                        .labelStyle(.titleAndIcon)
+                }
+            }
+        }
+        .navigationTitle(application.role)
+        .navigationSubtitle(application.company)
     }
     
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 12) {
                     Text(application.role)
-                        .font(.system(size: 28, weight: .bold))
+                        .font(.system(size: 24, weight: .semibold))
                         .foregroundColor(.primary)
+                        .lineLimit(2)
                     
                     HStack(spacing: 8) {
-                        Image(systemName: "building.2")
+                        Image(systemName: "building.2.fill")
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.secondary)
                         
                         Text(application.company)
-                            .font(.system(size: 17, weight: .medium))
+                            .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.secondary)
                     }
                 }
@@ -60,11 +74,14 @@ struct ApplicationDetailView: View {
                 quickActionsMenu
             }
             
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 StatusBadge(status: application.status, compact: false, showIcon: true)
                 
+                Divider()
+                    .frame(height: 20)
+                
                 HStack(spacing: 6) {
-                    Image(systemName: "clock")
+                    Image(systemName: "clock.fill")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
                     
@@ -74,7 +91,10 @@ struct ApplicationDetailView: View {
                 }
                 
                 if application.status == .noResponse {
-                    HStack(spacing: 4) {
+                    Divider()
+                        .frame(height: 20)
+                    
+                    HStack(spacing: 6) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.system(size: 12, weight: .medium))
                         Text("Needs follow-up")
@@ -83,11 +103,18 @@ struct ApplicationDetailView: View {
                     .foregroundColor(.orange)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(Color.orange.opacity(0.1))
-                    .clipShape(Capsule())
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.orange.opacity(0.12))
+                    )
                 }
             }
         }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(nsColor: .controlBackgroundColor))
+        )
     }
     
     private var quickActionsMenu: some View {
@@ -97,60 +124,37 @@ struct ApplicationDetailView: View {
             }) {
                 Label("Interview Scheduled", systemImage: "calendar.badge.clock")
             }
+            .disabled(isProcessingQuickAction)
             
             Button(action: {
-                Task {
-                    await appState.createActivity(
-                        applicationId: application.id,
-                        type: .interviewDone,
-                        occurredAt: Date(),
-                        note: ""
-                    )
-                }
+                handleQuickAction(.interviewDone)
             }) {
                 Label("Interview Done", systemImage: "checkmark.circle")
             }
+            .disabled(isProcessingQuickAction)
             
             Button(action: {
-                Task {
-                    await appState.createActivity(
-                        applicationId: application.id,
-                        type: .followUp,
-                        occurredAt: Date(),
-                        note: ""
-                    )
-                }
+                handleQuickAction(.followUp)
             }) {
                 Label("Follow Up", systemImage: "arrow.turn.up.right")
             }
+            .disabled(isProcessingQuickAction)
             
             Divider()
             
             Button(action: {
-                Task {
-                    await appState.createActivity(
-                        applicationId: application.id,
-                        type: .offerReceived,
-                        occurredAt: Date(),
-                        note: ""
-                    )
-                }
+                handleQuickAction(.offerReceived)
             }) {
                 Label("Offer Received", systemImage: "gift")
             }
+            .disabled(isProcessingQuickAction)
             
             Button(action: {
-                Task {
-                    await appState.createActivity(
-                        applicationId: application.id,
-                        type: .rejected,
-                        occurredAt: Date(),
-                        note: ""
-                    )
-                }
+                handleQuickAction(.rejected)
             }) {
                 Label("Rejection", systemImage: "xmark.circle")
             }
+            .disabled(isProcessingQuickAction)
             
             Divider()
             
@@ -159,11 +163,17 @@ struct ApplicationDetailView: View {
             }) {
                 Label("Add Note", systemImage: "note.text")
             }
+            .disabled(isProcessingQuickAction)
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: "bolt.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                Text("Quick Actions")
+                if isProcessingQuickAction {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                }
+                Text(isProcessingQuickAction ? "Processing..." : "Quick Actions")
                     .font(.system(size: 14, weight: .semibold))
             }
             .foregroundColor(.white)
@@ -313,5 +323,22 @@ struct ApplicationDetailView: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return formatter.string(from: date)
+    }
+    
+    private func handleQuickAction(_ activityType: ActivityType) {
+        Task {
+            isProcessingQuickAction = true
+            await appState.createActivity(
+                applicationId: application.id,
+                type: activityType,
+                occurredAt: Date(),
+                note: ""
+            )
+            // Refresh data after quick action
+            if appState.error == nil {
+                await appState.refresh()
+            }
+            isProcessingQuickAction = false
+        }
     }
 }
