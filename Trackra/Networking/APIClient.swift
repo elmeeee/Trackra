@@ -14,6 +14,7 @@ protocol APIClientProtocol {
     func fetchApplications(apiKey: String) async throws -> [Application]
     func createApplication(apiKey: String, role: String, company: String, appliedAt: Date, source: String, salaryRange: String, location: String, url: String) async throws -> String
     func createActivity(apiKey: String, applicationId: String, type: ActivityType, occurredAt: Date, note: String) async throws -> String
+    func fetchNotifications(apiKey: String) async throws -> [AppNotification]
 }
 
 final class APIClient: APIClientProtocol {
@@ -254,6 +255,42 @@ final class APIClient: APIClientProtocol {
             
             let createResponse = try decoder.decode(CreateResponse.self, from: data)
             return createResponse.id
+        } catch let error as APIError {
+            throw error
+        } catch let error as DecodingError {
+            throw APIError.decodingError(error)
+        } catch {
+            throw APIError.networkError(error)
+        }
+    }
+    
+    func fetchNotifications(apiKey: String) async throws -> [AppNotification] {
+        guard var urlComponents = URLComponents(string: baseURL) else {
+            throw APIError.invalidURL
+        }
+        
+        urlComponents.queryItems = [
+            URLQueryItem(name: "path", value: "activities/notifications"),
+            URLQueryItem(name: "apiKey", value: apiKey)
+        ]
+        
+        guard let url = urlComponents.url else {
+            throw APIError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        do {
+            let (data, response) = try await session.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode) else {
+                throw APIError.invalidResponse
+            }
+            
+            let notifications = try decoder.decode([AppNotification].self, from: data)
+            return notifications
         } catch let error as APIError {
             throw error
         } catch let error as DecodingError {

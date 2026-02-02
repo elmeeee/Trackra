@@ -11,7 +11,9 @@ import SwiftUI
 struct MainContentView: View {
     let authManager: AuthenticationManager
     @StateObject private var appState: AppState
+    @StateObject private var notificationManager = NotificationManager.shared
     @FocusState private var focusedField: FocusField?
+    @State private var showingNotifications = false
     
     init(authManager: AuthenticationManager) {
         self.authManager = authManager
@@ -60,6 +62,48 @@ struct MainContentView: View {
         }
         .toolbar {
             ToolbarItem(placement: .navigation) {
+                Button(action: {
+                    Task {
+                        await appState.refresh()
+                    }
+                }) {
+                    Label("Refresh", systemImage: "arrow.clockwise")
+                        .labelStyle(.iconOnly)
+                }
+                .help("Refresh applications")
+                .disabled(appState.isLoading)
+            }
+            
+            ToolbarItem(placement: .automatic) {
+                Button(action: {
+                    showingNotifications.toggle()
+                }) {
+                    ZStack(alignment: .topTrailing) {
+                        Image(systemName: "bell.fill")
+                            .font(.system(size: 16))
+                            .symbolRenderingMode(.hierarchical)
+                        
+                        if notificationManager.unreadCount > 0 {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.red)
+                                    .frame(width: 16, height: 16)
+                                
+                                Text("\(min(notificationManager.unreadCount, 99))")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(.white)
+                            }
+                            .offset(x: 8, y: -8)
+                        }
+                    }
+                }
+                .help("Notifications")
+                .popover(isPresented: $showingNotifications) {
+                    NotificationPanelView(notificationManager: notificationManager)
+                }
+            }
+            
+            ToolbarItem(placement: .automatic) {
                 Menu {
                     if let email = authManager.userEmail {
                         VStack(alignment: .leading, spacing: 4) {
@@ -96,27 +140,27 @@ struct MainContentView: View {
                 }
                 .help("Account")
             }
-            
-            ToolbarItem(placement: .automatic) {
-                Button(action: {
-                    Task {
-                        await appState.refresh()
-                    }
-                }) {
-                    Label("Refresh", systemImage: "arrow.clockwise")
-                        .labelStyle(.iconOnly)
-                }
-                .help("Refresh applications")
-                .disabled(appState.isLoading)
-            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .addApplication)) { _ in
             appState.showingAddApplication = true
         }
         .onAppear {
             focusedField = .list
+            setupNotifications()
+        }
+        .onDisappear {
+            notificationManager.stopPolling()
         }
         .focusedSceneValue(\.appState, appState)
+    }
+    
+    private func setupNotifications() {
+        notificationManager.configure(apiClient: APIClient(), authManager: authManager)
+        
+        Task {
+            await notificationManager.requestPermission()
+            notificationManager.startPolling()
+        }
     }
 }
 

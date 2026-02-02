@@ -44,6 +44,49 @@ struct ApplicationDetailView: View {
                         .labelStyle(.titleAndIcon)
                 }
             }
+            
+            ToolbarItem(placement: .automatic) {
+                Button(action: {
+                    // Notification action
+                }) {
+                    ZStack(alignment: .topTrailing) {
+                        Image(systemName: "bell.fill")
+                            .font(.system(size: 16))
+                            .symbolRenderingMode(.hierarchical)
+                        
+                        // Badge indicator (example)
+                        if NotificationManager.shared.unreadCount > 0 {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.red)
+                                    .frame(width: 16, height: 16)
+                                
+                                Text("\(min(NotificationManager.shared.unreadCount, 99))")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(.white)
+                            }
+                            .offset(x: 8, y: -8)
+                        }
+                    }
+                }
+                .help("Notifications")
+            }
+            
+            ToolbarItem(placement: .automatic) {
+                Menu {
+                    Button(action: {
+                        // Logout action
+                    }) {
+                        Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                    }
+                } label: {
+                    Image(systemName: "person.circle.fill")
+                        .font(.system(size: 20))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(.tint)
+                }
+                .help("Account")
+            }
         }
         .navigationTitle(application.role)
         .navigationSubtitle(application.company)
