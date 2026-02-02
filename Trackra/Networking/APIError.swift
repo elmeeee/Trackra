@@ -14,6 +14,7 @@ enum APIError: LocalizedError {
     case invalidResponse
     case decodingError(Error)
     case serverError(String)
+    case accountNotFound(email: String)
     
     var errorDescription: String? {
         switch self {
@@ -27,6 +28,8 @@ enum APIError: LocalizedError {
             return "Failed to decode response: \(error.localizedDescription)"
         case .serverError(let message):
             return "Server error: \(message)"
+        case .accountNotFound:
+            return "Account not found. An access request has been sent."
         }
     }
 }

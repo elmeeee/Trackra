@@ -15,16 +15,16 @@ struct MainContentView: View {
     @FocusState private var focusedField: FocusField?
     @State private var showingNotifications = false
     @State private var showingLogoutConfirmation = false
-    
+
     init(authManager: AuthenticationManager) {
         self.authManager = authManager
         _appState = StateObject(wrappedValue: AppState(authManager: authManager))
     }
-    
+
     enum FocusField {
         case list
     }
-    
+
     var body: some View {
         NavigationSplitView {
             ApplicationListView(appState: appState)
@@ -70,11 +70,18 @@ struct MainContentView: View {
                 }) {
                     Label("Refresh", systemImage: "arrow.clockwise")
                         .labelStyle(.iconOnly)
+                        .rotationEffect(.degrees(appState.isLoading ? 360 : 0))
+                        .animation(
+                            appState.isLoading
+                                ? Animation.linear(duration: 1.0).repeatForever(autoreverses: false)
+                                : .default,
+                            value: appState.isLoading
+                        )
                 }
                 .help("Refresh applications")
                 .disabled(appState.isLoading)
             }
-            
+
             ToolbarItem(placement: .automatic) {
                 Button(action: {
                     showingNotifications.toggle()
@@ -83,13 +90,13 @@ struct MainContentView: View {
                         Image(systemName: "bell.fill")
                             .font(.system(size: 16))
                             .symbolRenderingMode(.hierarchical)
-                        
+
                         if notificationManager.unreadCount > 0 {
                             ZStack {
                                 Circle()
                                     .fill(Color.red)
                                     .frame(width: 16, height: 16)
-                                
+
                                 Text("\(min(notificationManager.unreadCount, 99))")
                                     .font(.system(size: 9, weight: .bold))
                                     .foregroundColor(.white)
@@ -103,7 +110,7 @@ struct MainContentView: View {
                     NotificationPanelView(notificationManager: notificationManager)
                 }
             }
-            
+
             ToolbarItem(placement: .automatic) {
                 Menu {
                     if let email = authManager.userEmail {
@@ -116,9 +123,9 @@ struct MainContentView: View {
                         }
                         .padding(.vertical, 4)
                     }
-                    
+
                     Divider()
-                    
+
                     Button(action: {
                         showingLogoutConfirmation = true
                     }) {
@@ -131,7 +138,7 @@ struct MainContentView: View {
                             .font(.system(size: 20))
                             .symbolRenderingMode(.hierarchical)
                             .foregroundStyle(.tint)
-                        
+
                         if let email = authManager.userEmail {
                             Text(email)
                                 .font(.system(size: 13, weight: .medium))
@@ -173,10 +180,10 @@ struct MainContentView: View {
             Text("Are you sure you want to sign out?")
         }
     }
-    
+
     private func setupNotifications() {
         notificationManager.configure(apiClient: APIClient(), authManager: authManager)
-        
+
         Task {
             await notificationManager.requestPermission()
             notificationManager.startPolling()
@@ -188,7 +195,7 @@ extension FocusedValues {
     struct AppStateKey: FocusedValueKey {
         typealias Value = AppState
     }
-    
+
     var appState: AppState? {
         get { self[AppStateKey.self] }
         set { self[AppStateKey.self] = newValue }
