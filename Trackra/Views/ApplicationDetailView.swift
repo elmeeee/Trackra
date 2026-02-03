@@ -152,94 +152,98 @@ struct ApplicationDetailView: View {
 
     private var quickActionsMenu: some View {
         Menu {
-            Section("Interview") {
-                Button(action: {
-                    handleQuickAction(.hrScreen)
-                }) {
-                    Label("HR Screen", systemImage: "person.wave.2")
-                }
-                .disabled(isProcessingQuickAction)
+            if application.status != .rejected && application.status != .withdrawn
+                && application.status != .noResponse
+            {
+                Section("Interview") {
+                    Button(action: {
+                        handleQuickAction(.hrScreen)
+                    }) {
+                        Label("HR Screen", systemImage: "person.wave.2")
+                    }
+                    .disabled(isProcessingQuickAction)
 
-                Button(action: {
-                    handleQuickAction(.recruiterCall)
-                }) {
-                    Label("Recruiter Call", systemImage: "phone")
-                }
-                .disabled(isProcessingQuickAction)
+                    Button(action: {
+                        handleQuickAction(.recruiterCall)
+                    }) {
+                        Label("Recruiter Call", systemImage: "phone")
+                    }
+                    .disabled(isProcessingQuickAction)
 
-                Button(action: {
-                    handleQuickAction(.hiringManagerInterview)
-                }) {
-                    Label("Hiring Manager", systemImage: "person.crop.circle.badge.checkmark")
-                }
-                .disabled(isProcessingQuickAction)
+                    Button(action: {
+                        handleQuickAction(.hiringManagerInterview)
+                    }) {
+                        Label("Hiring Manager", systemImage: "person.crop.circle.badge.checkmark")
+                    }
+                    .disabled(isProcessingQuickAction)
 
-                Button(action: {
-                    handleQuickAction(.panelInterview)
-                }) {
-                    Label("Panel Interview", systemImage: "person.3")
-                }
-                .disabled(isProcessingQuickAction)
+                    Button(action: {
+                        handleQuickAction(.panelInterview)
+                    }) {
+                        Label("Panel Interview", systemImage: "person.3")
+                    }
+                    .disabled(isProcessingQuickAction)
 
-                Button(action: {
-                    handleQuickAction(.onsiteInterview)
-                }) {
-                    Label("Onsite Interview", systemImage: "building.2")
-                }
-                .disabled(isProcessingQuickAction)
+                    Button(action: {
+                        handleQuickAction(.onsiteInterview)
+                    }) {
+                        Label("Onsite Interview", systemImage: "building.2")
+                    }
+                    .disabled(isProcessingQuickAction)
 
-                Button(action: {
-                    appState.showingAddActivity = true
-                }) {
-                    Label("Interview Scheduled", systemImage: "calendar.badge.clock")
-                }
-                .disabled(isProcessingQuickAction)
+                    Button(action: {
+                        appState.showingAddActivity = true
+                    }) {
+                        Label("Interview Scheduled", systemImage: "calendar.badge.clock")
+                    }
+                    .disabled(isProcessingQuickAction)
 
-                Button(action: {
-                    handleQuickAction(.interviewDone)
-                }) {
-                    Label("Interview Done", systemImage: "checkmark.circle")
-                }
-                .disabled(isProcessingQuickAction)
+                    Button(action: {
+                        handleQuickAction(.interviewDone)
+                    }) {
+                        Label("Interview Done", systemImage: "checkmark.circle")
+                    }
+                    .disabled(isProcessingQuickAction)
 
-                Button(action: {
-                    handleQuickAction(.followUp)
-                }) {
-                    Label("Follow Up", systemImage: "arrow.turn.up.right")
+                    Button(action: {
+                        handleQuickAction(.followUp)
+                    }) {
+                        Label("Follow Up", systemImage: "arrow.turn.up.right")
+                    }
+                    .disabled(isProcessingQuickAction)
                 }
-                .disabled(isProcessingQuickAction)
-            }
 
-            Section("Technical") {
-                Button(action: {
-                    handleQuickAction(.technicalTest)
-                }) {
-                    Label("Technical Test", systemImage: "laptopcomputer")
-                }
-                .disabled(isProcessingQuickAction)
+                Section("Technical") {
+                    Button(action: {
+                        handleQuickAction(.technicalTest)
+                    }) {
+                        Label("Technical Test", systemImage: "laptopcomputer")
+                    }
+                    .disabled(isProcessingQuickAction)
 
-                Button(action: {
-                    handleQuickAction(.takeHomeTest)
-                }) {
-                    Label("Take Home Test", systemImage: "doc.text")
+                    Button(action: {
+                        handleQuickAction(.takeHomeTest)
+                    }) {
+                        Label("Take Home Test", systemImage: "doc.text")
+                    }
+                    .disabled(isProcessingQuickAction)
                 }
-                .disabled(isProcessingQuickAction)
-            }
 
-            Section("Final") {
-                Button(action: {
-                    handleQuickAction(.offerReceived)
-                }) {
-                    Label("Offer Received", systemImage: "gift")
-                }
-                .disabled(isProcessingQuickAction)
+                Section("Final") {
+                    Button(action: {
+                        handleQuickAction(.offerReceived)
+                    }) {
+                        Label("Offer Received", systemImage: "gift")
+                    }
+                    .disabled(isProcessingQuickAction)
 
-                Button(action: {
-                    handleQuickAction(.rejected)
-                }) {
-                    Label("Rejection", systemImage: "xmark.circle")
+                    Button(action: {
+                        handleQuickAction(.rejected)
+                    }) {
+                        Label("Rejection", systemImage: "xmark.circle")
+                    }
+                    .disabled(isProcessingQuickAction)
                 }
-                .disabled(isProcessingQuickAction)
             }
 
             Divider()
@@ -445,15 +449,7 @@ struct ApplicationDetailView: View {
     }
 
     private func handleQuickAction(_ activityType: ActivityType) {
-        Task {
-            isProcessingQuickAction = true
-            await appState.createActivity(
-                applicationId: application.id,
-                type: activityType,
-                occurredAt: Date(),
-                note: ""
-            )
-            isProcessingQuickAction = false
-        }
+        appState.activityTypeToAdd = activityType
+        appState.showingAddActivity = true
     }
 }

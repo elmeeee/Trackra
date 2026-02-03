@@ -12,20 +12,20 @@ struct AddActivityView: View {
     @ObservedObject var appState: AppState
     let applicationId: String
     @Environment(\.dismiss) private var dismiss
-    
+
     @State private var activityType: ActivityType = .note
     @State private var occurredAt = Date()
     @State private var note = ""
-    
+
     var body: some View {
         VStack(spacing: 0) {
             HStack {
                 Text("Add Activity")
                     .font(.title2)
                     .fontWeight(.bold)
-                
+
                 Spacer()
-                
+
                 Button(action: { dismiss() }) {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(.secondary)
@@ -34,9 +34,9 @@ struct AddActivityView: View {
                 .buttonStyle(.plain)
             }
             .padding()
-            
+
             Divider()
-            
+
             Form {
                 Section {
                     Picker("Activity Type", selection: $activityType) {
@@ -48,10 +48,10 @@ struct AddActivityView: View {
                             .tag(type)
                         }
                     }
-                    
+
                     DatePicker("Occurred At", selection: $occurredAt, displayedComponents: .date)
                 }
-                
+
                 Section {
                     TextEditor(text: $note)
                         .frame(minHeight: 100)
@@ -59,17 +59,17 @@ struct AddActivityView: View {
                 }
             }
             .formStyle(.grouped)
-            
+
             Divider()
-            
+
             HStack {
                 Button("Cancel") {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
-                
+
                 Spacer()
-                
+
                 Button("Add Activity") {
                     Task {
                         await appState.createActivity(
@@ -86,5 +86,11 @@ struct AddActivityView: View {
             .padding()
         }
         .frame(width: 500, height: 400)
+        .onAppear {
+            if let defaultType = appState.activityTypeToAdd {
+                activityType = defaultType
+                appState.activityTypeToAdd = nil
+            }
+        }
     }
 }

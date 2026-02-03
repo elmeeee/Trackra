@@ -44,6 +44,27 @@ struct ApplicationListView: View {
                 Spacer()
 
                 Button(action: {
+                    Task {
+                        await appState.refresh()
+                    }
+                }) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .rotationEffect(.degrees(appState.isLoading ? 360 : 0))
+                        .animation(
+                            appState.isLoading
+                                ? Animation.linear(duration: 1.0).repeatForever(autoreverses: false)
+                                : .default,
+                            value: appState.isLoading
+                        )
+                }
+                .buttonStyle(.plain)
+                .help("Refresh")
+                .disabled(appState.isLoading)
+                .padding(.trailing, 8)
+
+                Button(action: {
                     appState.showingAddApplication = true
                 }) {
                     Image(systemName: "plus.circle.fill")
@@ -138,14 +159,9 @@ struct ApplicationListView: View {
                                 isSelected: appState.selectedApplicationId == application.id,
                                 isProcessing: appState.processingApplicationId == application.id
                             ) { activityType in
-                                Task {
-                                    await appState.createActivity(
-                                        applicationId: application.id,
-                                        type: activityType,
-                                        occurredAt: Date(),
-                                        note: "Added via quick action"
-                                    )
-                                }
+                                appState.selectedApplicationId = application.id
+                                appState.activityTypeToAdd = activityType
+                                appState.showingAddActivity = true
                             }
                             .contentShape(Rectangle())
                             .onTapGesture {

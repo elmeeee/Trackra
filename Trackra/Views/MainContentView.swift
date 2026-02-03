@@ -62,27 +62,7 @@ struct MainContentView: View {
             }
         }
         .toolbar {
-            ToolbarItem(placement: .navigation) {
-                Button(action: {
-                    Task {
-                        await appState.refresh()
-                    }
-                }) {
-                    Label("Refresh", systemImage: "arrow.clockwise")
-                        .labelStyle(.iconOnly)
-                        .rotationEffect(.degrees(appState.isLoading ? 360 : 0))
-                        .animation(
-                            appState.isLoading
-                                ? Animation.linear(duration: 1.0).repeatForever(autoreverses: false)
-                                : .default,
-                            value: appState.isLoading
-                        )
-                }
-                .help("Refresh applications")
-                .disabled(appState.isLoading)
-            }
-
-            ToolbarItem(placement: .automatic) {
+            ToolbarItem(placement: .primaryAction) {
                 Button(action: {
                     showingNotifications.toggle()
                 }) {
@@ -111,7 +91,7 @@ struct MainContentView: View {
                 }
             }
 
-            ToolbarItem(placement: .automatic) {
+            ToolbarItem(placement: .primaryAction) {
                 Menu {
                     if let email = authManager.userEmail {
                         VStack(alignment: .leading, spacing: 4) {

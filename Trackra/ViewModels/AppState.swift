@@ -20,6 +20,7 @@ final class AppState: ObservableObject {
     @Published var showingAddActivity = false
     @Published var processingApplicationId: String?
     @Published var successMessage: String?
+    @Published var activityTypeToAdd: ActivityType?
 
     private let apiClient: APIClientProtocol
     let authManager: AuthenticationManager
