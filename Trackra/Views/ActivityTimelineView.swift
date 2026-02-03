@@ -12,7 +12,20 @@ struct ActivityTimelineView: View {
     let application: Application
 
     private var sortedActivities: [Activity] {
-        application.activities.sorted { $0.occurredAt > $1.occurredAt }
+        // Sort by occurredAt descending (Result: Newest First)
+        // If dates are equal, we can't guarantee order without another property,
+        // but typically the insertion order (which stable sort preserves) or ID might define it.
+        // Assuming user adds activities in order, Latest added = Newest.
+        // If the array comes from backend, it might be in arbitrary order.
+        return application.activities.sorted {
+            // Use > for descending (Newest Top)
+            if $0.occurredAt == $1.occurredAt {
+                // Determine equality fallback?
+                // For now just rely on >
+                return false
+            }
+            return $0.occurredAt > $1.occurredAt
+        }
     }
 
     var body: some View {

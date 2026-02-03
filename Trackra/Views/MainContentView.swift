@@ -78,8 +78,14 @@ struct MainContentView: View {
             notificationManager.stopPolling()
         }
         .focusedSceneValue(\.appState, appState)
-        .alert("Success", isPresented: .constant(appState.successMessage != nil)) {
-            Button("OK") {
+        .alert(
+            "Success",
+            isPresented: Binding(
+                get: { appState.successMessage != nil },
+                set: { _ in appState.successMessage = nil }
+            )
+        ) {
+            Button("OK", role: .cancel) {
                 appState.successMessage = nil
             }
         } message: {

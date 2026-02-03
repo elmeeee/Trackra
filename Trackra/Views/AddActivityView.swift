@@ -16,6 +16,7 @@ struct AddActivityView: View {
     @State private var activityType: ActivityType = .note
     @State private var occurredAt = Date()
     @State private var note = ""
+    @State private var isSubmitting = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -67,10 +68,12 @@ struct AddActivityView: View {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
+                .disabled(isSubmitting)
 
                 Spacer()
 
-                Button("Add Activity") {
+                Button(action: {
+                    isSubmitting = true
                     Task {
                         await appState.createActivity(
                             applicationId: applicationId,
@@ -78,9 +81,18 @@ struct AddActivityView: View {
                             occurredAt: occurredAt,
                             note: note
                         )
+                        isSubmitting = false
                         dismiss()
                     }
+                }) {
+                    if isSubmitting {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Text("Add Activity")
+                    }
                 }
+                .disabled(isSubmitting)
                 .keyboardShortcut(.defaultAction)
             }
             .padding()

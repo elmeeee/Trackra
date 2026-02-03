@@ -91,7 +91,9 @@ struct ApplicationRow: View {
     }
 
     private var lastStageLabel: String {
-        guard let latestActivity = application.activities.max(by: { $0.occurredAt < $1.occurredAt })
+        guard
+            let latestActivity = application.activities.sorted(by: { $0.occurredAt > $1.occurredAt }
+            ).first
         else {
             return "Applied"
         }

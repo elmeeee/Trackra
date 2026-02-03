@@ -11,6 +11,10 @@ import SwiftUI
 struct ApplicationDetailView: View {
     @ObservedObject var appState: AppState
     let application: Application
+
+    var liveApplication: Application {
+        appState.applications.first(where: { $0.id == application.id }) ?? application
+    }
     @State private var isProcessingQuickAction = false
     @State private var showingLogoutConfirmation = false
     @State private var showingDeleteConfirmation = false
@@ -30,7 +34,7 @@ struct ApplicationDetailView: View {
 
                 statusAndActionsSection
 
-                if application.status == .noResponse {
+                if liveApplication.status == .noResponse {
                     followUpBanner
                         .padding(.top, 20)
                 }
@@ -45,8 +49,8 @@ struct ApplicationDetailView: View {
         .toolbar {
 
         }
-        .navigationTitle(application.role)
-        .navigationSubtitle(application.company)
+        .navigationTitle(liveApplication.role)
+        .navigationSubtitle(liveApplication.company)
         .alert("Sign Out", isPresented: $showingLogoutConfirmation) {
             Button("Cancel", role: .cancel) {
                 showingLogoutConfirmation = false
@@ -63,7 +67,7 @@ struct ApplicationDetailView: View {
             }
             Button("Delete", role: .destructive) {
                 Task {
-                    await appState.deleteApplication(applicationId: application.id)
+                    await appState.deleteApplication(applicationId: liveApplication.id)
                 }
             }
         } message: {
@@ -77,7 +81,7 @@ struct ApplicationDetailView: View {
         VStack(alignment: .leading, spacing: 20) {
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(application.role)
+                    Text(liveApplication.role)
                         .font(.system(size: 24, weight: .semibold))
                         .foregroundColor(.primary)
                         .lineLimit(2)
@@ -87,7 +91,7 @@ struct ApplicationDetailView: View {
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.secondary)
 
-                        Text(application.company)
+                        Text(liveApplication.company)
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.secondary)
                     }
@@ -99,9 +103,29 @@ struct ApplicationDetailView: View {
             }
 
             HStack(spacing: 10) {
-                StatusBadge(status: application.status, compact: false, showIcon: true)
+                // Original Status Badge (Backend Status)
+                StatusBadge(status: liveApplication.status, compact: false, showIcon: true)
 
-                if application.status != .rejected {
+                // Last Activity Badge (Synced with Timeline)
+                if let latestActivity = liveApplication.activities.sorted(by: {
+                    $0.occurredAt > $1.occurredAt
+                }).first,
+                    latestActivity.type != .note && latestActivity.type != .followUp
+                {
+                    Text(latestActivity.type.displayName)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.accentColor.opacity(0.1))
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule()
+                                .strokeBorder(Color.accentColor.opacity(0.2), lineWidth: 1)
+                        )
+                }
+
+                if liveApplication.status != .rejected {
                     Divider()
                         .frame(height: 20)
 
@@ -110,13 +134,13 @@ struct ApplicationDetailView: View {
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.secondary)
 
-                        Text("\(application.daysSinceLastActivity) days ago")
+                        Text("\(liveApplication.daysSinceLastActivity) days ago")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(.secondary)
                     }
                 }
 
-                if application.status == .noResponse {
+                if liveApplication.status == .noResponse {
                     Divider()
                         .frame(height: 20)
 
@@ -145,8 +169,8 @@ struct ApplicationDetailView: View {
 
     private var quickActionsMenu: some View {
         Menu {
-            if application.status != .rejected && application.status != .withdrawn
-                && application.status != .noResponse
+            if liveApplication.status != .rejected && liveApplication.status != .withdrawn
+                && liveApplication.status != .noResponse
             {
                 Section("Interview") {
                     Button(action: {
@@ -291,7 +315,7 @@ struct ApplicationDetailView: View {
             }
 
             HStack {
-                StatusBadge(status: application.status, compact: false, showIcon: true)
+                StatusBadge(status: liveApplication.status, compact: false, showIcon: true)
 
                 Spacer()
             }
@@ -307,33 +331,33 @@ struct ApplicationDetailView: View {
                 metadataCard(
                     icon: "calendar",
                     title: "Applied",
-                    value: formatDate(application.appliedAt)
+                    value: formatDate(liveApplication.appliedAt)
                 )
 
-                if !application.location.isEmpty {
+                if !liveApplication.location.isEmpty {
                     metadataCard(
                         icon: "location.fill",
                         title: "Location",
-                        value: application.location
+                        value: liveApplication.location
                     )
                 }
             }
 
-            if !application.salaryRange.isEmpty || !application.source.isEmpty {
+            if !liveApplication.salaryRange.isEmpty || !liveApplication.source.isEmpty {
                 HStack(spacing: 20) {
-                    if !application.salaryRange.isEmpty {
+                    if !liveApplication.salaryRange.isEmpty {
                         metadataCard(
                             icon: "dollarsign.circle.fill",
                             title: "Salary Range",
-                            value: application.salaryRange
+                            value: liveApplication.salaryRange
                         )
                     }
 
-                    if !application.source.isEmpty {
+                    if !liveApplication.source.isEmpty {
                         metadataCard(
                             icon: "link.circle.fill",
                             title: "Source",
-                            value: application.source
+                            value: liveApplication.source
                         )
                     }
                 }
@@ -387,7 +411,7 @@ struct ApplicationDetailView: View {
             Button(action: {
                 Task {
                     await appState.createActivity(
-                        applicationId: application.id,
+                        applicationId: liveApplication.id,
                         type: .followUp,
                         occurredAt: Date(),
                         note: ""
@@ -422,7 +446,7 @@ struct ApplicationDetailView: View {
                     Text("Timeline")
                         .font(.system(size: 20, weight: .bold))
 
-                    Text("\(application.activities.count + 1) events")
+                    Text("\(liveApplication.activities.count + 1) events")
                         .font(.system(size: 13, weight: .regular))
                         .foregroundColor(.secondary)
                 }
@@ -430,7 +454,7 @@ struct ApplicationDetailView: View {
                 Spacer()
             }
 
-            ActivityTimelineView(application: application)
+            ActivityTimelineView(application: liveApplication)
         }
     }
 
