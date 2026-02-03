@@ -107,10 +107,16 @@ struct ApplicationDetailView: View {
                 StatusBadge(status: liveApplication.status, compact: false, showIcon: true)
 
                 // Last Activity Badge (Synced with Timeline)
+                // Last Activity Badge (Synced with Timeline)
                 if let latestActivity = liveApplication.activities.sorted(by: {
-                    $0.occurredAt > $1.occurredAt
+                    if $0.occurredAt == $1.occurredAt {
+                        return $0.type.sortOrder > $1.type.sortOrder
+                    }
+                    return $0.occurredAt > $1.occurredAt
                 }).first,
-                    latestActivity.type != .note && latestActivity.type != .followUp
+                    latestActivity.type != .note && latestActivity.type != .followUp,
+                    // Don't show if the activity implies the current status (avoid redundancy)
+                    latestActivity.type.associatedStatus != liveApplication.status
                 {
                     Text(latestActivity.type.displayName)
                         .font(.system(size: 11, weight: .medium))

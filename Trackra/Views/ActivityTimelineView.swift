@@ -18,11 +18,9 @@ struct ActivityTimelineView: View {
         // Assuming user adds activities in order, Latest added = Newest.
         // If the array comes from backend, it might be in arbitrary order.
         return application.activities.sorted {
-            // Use > for descending (Newest Top)
             if $0.occurredAt == $1.occurredAt {
-                // Determine equality fallback?
-                // For now just rely on >
-                return false
+                // Secondary sort: Activity Type Precedence (Highest first)
+                return $0.type.sortOrder > $1.type.sortOrder
             }
             return $0.occurredAt > $1.occurredAt
         }

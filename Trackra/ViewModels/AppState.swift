@@ -143,6 +143,40 @@ final class AppState: ObservableObject {
                 occurredAt: occurredAt,
                 note: note
             )
+
+            // Check if we should update the application status based on this new activity
+            if let newStatus = type.associatedStatus, newStatus != originalApp.status {
+                // Check if this activity is the latest/highest precedence
+                let isLatest: Bool
+                if originalApp.activities.isEmpty {
+                    isLatest = true
+                } else {
+                    let currentBest = originalApp.activities.max { a, b in
+                        if a.occurredAt != b.occurredAt { return a.occurredAt < b.occurredAt }
+                        return a.type.sortOrder < b.type.sortOrder
+                    }
+
+                    if let currentBest {
+                        if occurredAt > currentBest.occurredAt {
+                            isLatest = true
+                        } else if occurredAt == currentBest.occurredAt
+                            && type.sortOrder >= currentBest.type.sortOrder
+                        {
+                            isLatest = true
+                        } else {
+                            isLatest = false
+                        }
+                    } else {
+                        isLatest = true
+                    }
+                }
+
+                if isLatest {
+                    try await apiClient.updateStatus(
+                        apiKey: apiKey, applicationId: applicationId, status: newStatus)
+                }
+            }
+
             HapticManager.shared.notification(type: .success)
             await loadApplications(withLoadingState: false)
             successMessage = getSuccessMessage(for: type)

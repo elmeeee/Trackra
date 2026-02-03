@@ -58,4 +58,37 @@ enum ActivityType: String, Codable, CaseIterable {
         case .followUp: return "arrow.turn.up.right"
         }
     }
+
+    var sortOrder: Int {
+        switch self {
+        case .offerReceived: return 100
+        case .rejected: return 90
+        case .interviewDone: return 80
+        case .onsiteInterview: return 75
+        case .panelInterview: return 70
+        case .hiringManagerInterview: return 65
+        case .technicalTest, .takeHomeTest: return 60
+        case .interviewScheduled: return 55
+        case .recruiterCall: return 50
+        case .hrScreen: return 45
+        case .followUp: return 20
+        case .note: return 10
+        }
+    }
+
+    var associatedStatus: ApplicationStatus? {
+        switch self {
+        case .hrScreen, .recruiterCall, .hiringManagerInterview, .panelInterview, .onsiteInterview,
+            .interviewScheduled, .interviewDone:
+            return .interview
+        case .technicalTest, .takeHomeTest:
+            return .technicalTest
+        case .offerReceived:
+            return .offering
+        case .rejected:
+            return .rejected
+        default:
+            return nil
+        }
+    }
 }
