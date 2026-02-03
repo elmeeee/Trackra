@@ -21,23 +21,28 @@ struct MainContentView: View {
         _appState = StateObject(wrappedValue: AppState(authManager: authManager))
     }
 
+    enum SidebarItem: String, CaseIterable, Identifiable {
+        case dashboard = "Dashboard"
+        case applications = "Applications"
+        var id: String { rawValue }
+    }
+
     enum FocusField {
         case list
     }
 
+    @State private var sidebarSelection: SidebarItem? = .applications
+
     var body: some View {
         NavigationSplitView {
-            ApplicationListView(appState: appState)
-                .focused($focusedField, equals: .list)
+            sidebarView
         } detail: {
-            if let application = appState.selectedApplication {
-                ApplicationDetailView(appState: appState, application: application)
-            } else {
-                EmptyStateView(
-                    icon: "tray.fill",
-                    title: "No Selection",
-                    message: "Select an application from the list to view details."
-                )
+            switch sidebarSelection {
+            case .dashboard:
+                DashboardView(appState: appState)
+                    .frame(minWidth: 600)  // Ensure dashboard has space
+            case .applications, .none:
+                applicationsSplitView
             }
         }
         .navigationSplitViewStyle(.balanced)
@@ -61,74 +66,7 @@ struct MainContentView: View {
                 AddActivityView(appState: appState, applicationId: applicationId)
             }
         }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button(action: {
-                    showingNotifications.toggle()
-                }) {
-                    ZStack(alignment: .topTrailing) {
-                        Image(systemName: "bell.fill")
-                            .font(.system(size: 16))
-                            .symbolRenderingMode(.hierarchical)
 
-                        if notificationManager.unreadCount > 0 {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.red)
-                                    .frame(width: 16, height: 16)
-
-                                Text("\(min(notificationManager.unreadCount, 99))")
-                                    .font(.system(size: 9, weight: .bold))
-                                    .foregroundColor(.white)
-                            }
-                            .offset(x: 8, y: -8)
-                        }
-                    }
-                }
-                .help("Notifications")
-                .popover(isPresented: $showingNotifications) {
-                    NotificationPanelView(notificationManager: notificationManager)
-                }
-            }
-
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
-                    if let email = authManager.userEmail {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(email)
-                                .font(.system(size: 13, weight: .medium))
-                            Text("Signed in")
-                                .font(.system(size: 11))
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(.vertical, 4)
-                    }
-
-                    Divider()
-
-                    Button(action: {
-                        showingLogoutConfirmation = true
-                    }) {
-                        Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                    }
-                    .keyboardShortcut("q", modifiers: [.command, .shift])
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "person.circle.fill")
-                            .font(.system(size: 20))
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundStyle(.tint)
-
-                        if let email = authManager.userEmail {
-                            Text(email)
-                                .font(.system(size: 13, weight: .medium))
-                                .lineLimit(1)
-                        }
-                    }
-                }
-                .help("Account")
-            }
-        }
         .onReceive(NotificationCenter.default.publisher(for: .addApplication)) { _ in
             appState.showingAddApplication = true
         }
@@ -158,6 +96,37 @@ struct MainContentView: View {
             }
         } message: {
             Text("Are you sure you want to sign out?")
+        }
+    }
+
+    @ViewBuilder
+    private var sidebarView: some View {
+        List(SidebarItem.allCases, selection: $sidebarSelection) { item in
+            NavigationLink(value: item) {
+                Label(
+                    item.rawValue,
+                    systemImage: item.id == SidebarItem.dashboard.id
+                        ? "square.grid.2x2" : "list.bullet")
+            }
+        }
+        .navigationTitle("Trackra")
+        .navigationSplitViewColumnWidth(min: 220, ideal: 220, max: 220)
+    }
+
+    @ViewBuilder
+    private var applicationsSplitView: some View {
+        NavigationStack {
+            ApplicationListView(appState: appState)
+                .navigationDestination(
+                    isPresented: Binding(
+                        get: { appState.selectedApplicationId != nil },
+                        set: { if !$0 { appState.selectedApplicationId = nil } }
+                    )
+                ) {
+                    if let application = appState.selectedApplication {
+                        ApplicationDetailView(appState: appState, application: application)
+                    }
+                }
         }
     }
 

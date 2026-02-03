@@ -43,14 +43,7 @@ struct ApplicationDetailView: View {
             .padding(24)
         }
         .toolbar {
-            ToolbarItem(placement: .navigation) {
-                Button(action: {
-                    appState.selectedApplicationId = nil
-                }) {
-                    Label("Back", systemImage: "chevron.left")
-                        .labelStyle(.titleAndIcon)
-                }
-            }
+
         }
         .navigationTitle(application.role)
         .navigationSubtitle(application.company)

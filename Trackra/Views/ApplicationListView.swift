@@ -10,8 +10,11 @@ import SwiftUI
 
 struct ApplicationListView: View {
     @ObservedObject var appState: AppState
+    @ObservedObject var notificationManager = NotificationManager.shared
     @State private var searchText = ""
     @State private var selectedStatus: ApplicationStatus? = nil
+    @State private var showingNotifications = false
+    @State private var showingLogoutConfirmation = false
 
     var filteredApplications: [Application] {
         let baseApps = appState.sortedApplications
@@ -28,151 +31,118 @@ struct ApplicationListView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Applications")
-                        .font(.system(size: 22, weight: .bold))
-
-                    if !appState.applications.isEmpty {
-                        Text("\(appState.applications.count) total")
-                            .font(.system(size: 13, weight: .regular))
-                            .foregroundColor(.secondary)
-                    }
-                }
-
-                Spacer()
-
-                Button(action: {
-                    Task {
-                        await appState.refresh()
-                    }
-                }) {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.secondary)
-                        .rotationEffect(.degrees(appState.isLoading ? 360 : 0))
-                        .animation(
-                            appState.isLoading
-                                ? Animation.linear(duration: 1.0).repeatForever(autoreverses: false)
-                                : .default,
-                            value: appState.isLoading
-                        )
-                }
-                .buttonStyle(.plain)
-                .help("Refresh")
-                .disabled(appState.isLoading)
-                .padding(.trailing, 8)
-
-                Button(action: {
-                    appState.showingAddApplication = true
-                }) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 24))
-                        .symbolRenderingMode(.hierarchical)
-                }
-                .buttonStyle(.plain)
-                .help("Add Application")
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
-
-            Divider()
-
-            VStack(spacing: 0) {
-                HStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.secondary)
-                        .font(.system(size: 14))
-
-                    TextField("Search by role or company...", text: $searchText)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 14))
-
-                    if !searchText.isEmpty {
-                        Button(action: {
-                            searchText = ""
-                        }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.secondary)
-                                .font(.system(size: 14))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        CategoryChip(
-                            title: "All",
-                            color: .primary,
-                            isSelected: selectedStatus == nil
-                        ) {
-                            withAnimation { selectedStatus = nil }
-                        }
-
-                        ForEach(ApplicationStatus.allCases, id: \.self) { status in
-                            CategoryChip(
-                                title: status.displayName,
-                                color: colorForStatus(status),
-                                isSelected: selectedStatus == status
-                            ) {
-                                withAnimation { selectedStatus = status }
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 12)
-                }
-            }
-            .background(Color(NSColor.controlBackgroundColor))
-
-            Divider()
-
-            if appState.isLoading {
-                SkeletonLoadingView()
-            } else if let error = appState.error, appState.applications.isEmpty {
-                ErrorView(error: error) {
-                    Task {
-                        await appState.refresh()
-                    }
-                }
-            } else if appState.applications.isEmpty {
-                EmptyStateView(
-                    icon: "tray",
-                    title: "No Applications Yet",
-                    message:
-                        "Start tracking your job search journey by adding your first application.",
-                    actionTitle: "Add Application",
-                    action: {
-                        appState.showingAddApplication = true
-                    }
+        ZStack {
+            List(
+                selection: Binding(
+                    get: { appState.selectedApplicationId },
+                    set: { appState.selectedApplicationId = $0 }
                 )
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 8) {
-                        ForEach(filteredApplications) { application in
-                            ApplicationRow(
-                                application: application,
-                                isSelected: appState.selectedApplicationId == application.id,
-                                isProcessing: appState.processingApplicationId == application.id
-                            ) { activityType in
-                                appState.selectedApplicationId = application.id
-                                appState.activityTypeToAdd = activityType
-                                appState.showingAddActivity = true
-                            }
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    appState.selectedApplicationId = application.id
-                                }
+            ) {
+                ForEach(filteredApplications) { application in
+                    ApplicationRow(
+                        application: application,
+                        isSelected: appState.selectedApplicationId == application.id,
+                        isProcessing: appState.processingApplicationId == application.id
+                    ) { activityType in
+                        appState.selectedApplicationId = application.id
+                        appState.activityTypeToAdd = activityType
+                        appState.showingAddActivity = true
+                    }
+                    .tag(application.id)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
+                }
+            }
+            .listStyle(.plain)
+            .searchable(
+                text: $searchText, placement: .automatic, prompt: "Search by role or company..."
+            )
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(action: {
+                        Task {
+                            await appState.refresh()
+                        }
+                    }) {
+                        Image(systemName: "arrow.clockwise")
+                            .rotationEffect(.degrees(appState.isLoading ? 360 : 0))
+                            .animation(
+                                appState.isLoading
+                                    ? Animation.linear(duration: 1.0).repeatForever(
+                                        autoreverses: false)
+                                    : .default,
+                                value: appState.isLoading
+                            )
+                    }
+                    .help("Refresh")
+                    .disabled(appState.isLoading)
+                }
+
+                ToolbarItem(placement: .primaryAction) {
+                    Button(action: {
+                        appState.showingAddApplication = true
+                    }) {
+                        Label("Add Application", systemImage: "plus")
+                    }
+                    .help("New Application (⌘N)")
+                    .keyboardShortcut("n", modifiers: .command)
+                }
+
+                ToolbarItem(placement: .primaryAction) {
+                    Button(action: { showingNotifications.toggle() }) {
+                        ZStack {
+                            Image(systemName: "bell.fill")
+
+                            if notificationManager.unreadCount > 0 {
+                                Circle()
+                                    .fill(Color.red)
+                                    .frame(width: 8, height: 8)
+                                    .offset(x: 4, y: -4)
                             }
                         }
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 12)
+                    .popover(isPresented: $showingNotifications) {
+                        NotificationPanelView(notificationManager: notificationManager)
+                    }
+                    .help("Notifications")
+                }
+
+                if let email = appState.authManager.userEmail {
+                    ToolbarItem(placement: .primaryAction) {
+                        Menu {
+                            Text(email)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            Divider()
+
+                            Button("Sign Out", role: .destructive) {
+                                showingLogoutConfirmation = true
+                            }
+                        } label: {
+                            Image(systemName: "person.circle")
+                        }
+                        .confirmationDialog("Sign Out?", isPresented: $showingLogoutConfirmation) {
+                            Button("Sign Out", role: .destructive) {
+                                appState.authManager.logout()
+                            }
+                            Button("Cancel", role: .cancel) {}
+                        }
+                        .help("Account")
+                    }
+                }
+            }
+            .navigationTitle("Applications")
+
+            if appState.isLoading && appState.applications.isEmpty {
+                SkeletonLoadingView()
+            } else if appState.applications.isEmpty && !appState.isLoading {
+                ContentUnavailableView {
+                    Label("No Applications", systemImage: "tray")
+                } description: {
+                    Text("Start tracking by adding your first application.")
+                } actions: {
+                    Button("Add Application") { appState.showingAddApplication = true }
                 }
             }
         }

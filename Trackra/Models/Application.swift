@@ -20,8 +20,8 @@ struct Application: Codable, Identifiable, Equatable {
     let createdAt: Date
     var status: ApplicationStatus
     let daysSinceLastActivity: Int
-    let activities: [Activity]
-    
+    var activities: [Activity]
+
     static func == (lhs: Application, rhs: Application) -> Bool {
         lhs.id == rhs.id
     }
